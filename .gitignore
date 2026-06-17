@@ -1,0 +1,15 @@
+# Datendateien (nicht auf GitHub hochladen - Lizenz/Datenschutz)
+Data/
+
+# R spezifisch
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+
+# Output (optional: entfernen wenn Output versioniert werden soll)
+Output/
+
+# Stata temporäre Dateien
+*.stswp
+*.stptmp
