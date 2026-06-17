@@ -7,9 +7,9 @@ Data/
 .Rproj.user/
 *.Rproj
 
-# Output (optional: entfernen wenn Output versioniert werden soll)
-Output/
-
 # Stata temporäre Dateien
 *.stswp
 *.stptmp
+
+#Stata data files
+*.dta
