@@ -60,7 +60,7 @@ tables   <- file.path(maindir, "Output/tab")
 # Lade die Daten
 # read_dta() liest Stata-.dta-Dateien ein und behält Variablen- und Wertelabels
 
-df_raw <- read_dta(file.path(data_in, "ESS3e03_7.dta"))
+df_raw <- read_dta(file.path(data_in, "ESS9e03_3.dta")) #ESS3e03_7.dta
 # Datenfile verfügbar unter: https://doi.org/10.21338/ess3e03_7
 
 # ----------------------------------------------------------------------------- #
@@ -94,34 +94,34 @@ count(df, aftjbyc)
 df |> summarise(missing = sum(is.na(aftjbyc)))
 
 # ZENTRALE UNABHÄNGIGE VARIABLEN
-# Indikator ob Frage aftjbyc sich auf Männer oder Frauen bezieht
-count(df, icsbfm)
+# Indikator ob Frage aftjbyc sich auf Männer oder Frauen bezieht -> group a women, group b men
+count(df, admge)
 
 # WEITERE UNABHÄNGIGE VARIABLEN: Geschlecht, Alter, Bildung, Stadt/Land, Kinder
 # Wertebereiche, Labels und fehlende Werte auf einen Blick
 # select() wählt bestimmte Spalten aus dem Datensatz aus
 # summary() gibt Minimum, Maximum, Mittelwert und fehlende Werte aus
 df |>
-  select(gndr, age, edulvla, domicil, bthcld) |>
+  select(gndr, agea, eisced, domicil, bthcld) |>
   summary()
 
 # Kreuztabellen zwischen abhängiger und unabhängigen Variablen
 # um die Rekodierung zu unterstützen
 # pivot_wider() dreht das Ergebnis von lang nach breit (eine Spalte pro Kategorie)
 df |>
-  count(aftjbyc, edulvla) |>
-  pivot_wider(names_from = edulvla, values_from = n)
+  count(aftjbyc, eisced) |>
+  pivot_wider(names_from = eisced, values_from = n)
 
-# Spaltenprozente (entspricht: tab aftjbyc edulvla, nof col)
+# Spaltenprozente (entspricht: tab aftjbyc eisced, nof col)
 # group_by() gruppiert den Datensatz – nachfolgende Operationen laufen innerhalb
-# der Gruppen ab (hier: Prozente werden innerhalb jeder edulvla-Gruppe berechnet)
+# der Gruppen ab (hier: Prozente werden innerhalb jeder eisced-Gruppe berechnet)
 # mutate() erstellt neue Spalten oder verändert bestehende
 df |>
-  count(aftjbyc, edulvla) |>
-  group_by(edulvla) |>
+  count(aftjbyc, eisced) |>
+  group_by(eisced) |>
   mutate(pct = n / sum(n) * 100) |>
   select(-n) |>           # -n entfernt die Spalte n
-  pivot_wider(names_from = edulvla, values_from = pct)
+  pivot_wider(names_from = eisced, values_from = pct)
 
 # Mittelwert der abhängigen Variable nach Wohnortgröße
 # (entspricht: mean aftjbyc, over(domicil))
@@ -168,8 +168,8 @@ df <- df |>
   mutate(
     # (0) Treatment: Geschlecht der zu beurteilenden fiktiven Person
     treatment = factor(case_when(
-      as.numeric(icsbfm) == 2 ~ 0,  # Mann
-      as.numeric(icsbfm) == 1 ~ 1   # Frau
+      as.numeric(admge) == 2 ~ 0,  # Mann
+      as.numeric(admge) == 1 ~ 1   # Frau
     ), levels = c(0, 1), labels = c("Mann", "Frau")),
 
     # (1) Geschlecht der befragten Person
@@ -179,7 +179,7 @@ df <- df |>
     ), levels = c(0, 1), labels = c("Mann", "Frau")),
 
     # (2) Altersgruppen ("/" bedeutet bis)
-    alter    = trunc(as.numeric(age)),  # Kommastellen abschneiden (truncated)
+    alter    = trunc(as.numeric(agea)),  # Kommastellen abschneiden (truncated)
     alter_gr = case_when(
       alter <= 29               ~ "15-29 Jahre",
       alter >= 30 & alter <= 44 ~ "30-44 Jahre",
@@ -192,9 +192,9 @@ df <- df |>
 
     # (3) Bildung
     bildung = case_when(
-      as.numeric(edulvla) %in% 1:2 ~ 0,  # <= Sekundarstufe I
-      as.numeric(edulvla) == 3     ~ 1,  # Sekundarstufe II
-      as.numeric(edulvla) %in% 4:5 ~ 2   # post-sek., tertiär
+      as.numeric(eisced) %in% 1:4 ~ 0,  # <= Sekundarstufe I
+      as.numeric(eisced) == 5:6   ~ 1,  # Sekundarstufe II
+      as.numeric(eisced) %in% 7:8 ~ 2   # post-sek., tertiär
     ),
     bildung = factor(bildung,
                      levels = 0:2,
@@ -213,8 +213,8 @@ df <- df |>
 
     # (5) Kinder
     child = factor(case_when(
-      as.numeric(chldhm) == 1 ~ 1,  # Kind im Haushalt
-      as.numeric(chldhm) == 2 ~ 0   # Kein Kind im Haushalt
+      as.numeric(bthcld) == 1 ~ 1,  # Kind im Haushalt
+      as.numeric(bthcld) == 2 ~ 0   # Kein Kind im Haushalt
     ), levels = c(0, 1), labels = c("Kein Kind im Haushalt", "Kind im Haushalt"))
   )
 
@@ -231,12 +231,12 @@ attr(df$child,       "label") <- "Kind <18 im Haushalt"
 
 # Überprüfen der Rekodierungen durch Kreuztabellen
 # print(n = 20) zeigt bis zu 20 Zeilen an (Standard sind 10)
-count(df, icsbfm, treatment)
+count(df, admge, treatment)
 count(df, gndr, geschlecht)
 count(df, alter, alter_gr) |> print(n = 20)
-count(df, edulvla, bildung)
+count(df, eisced, bildung)
 count(df, domicil, urban)
-count(df, chldhm, child)
+count(df, bthcld, child)
 
 # -----------------------------------------------------------------------
 # ERSTE DESKRIPTIVE ANALYSEN
@@ -283,7 +283,7 @@ nrow(df) # nrow() gibt die Anzahl der Zeilen (Beobachtungen) aus
 
 # Listwise deletion: Exkludiere alle Fälle mit fehlenden Werten in Modellvariablen
 # Achtung: vorher UNBEDINGT genau nachsehen wie fehlende Werte codiert sind
-# Variablen icsbfm, geschlecht, alter_gr, urban haben keine fehlenden Werte
+# Variablen admge, geschlecht, alter_gr, urban haben keine fehlenden Werte
 # ! kehrt eine logische Bedingung um (TRUE wird FALSE und umgekehrt)
 
 df <- df |>
@@ -299,7 +299,7 @@ nrow(df) # 2295 Individuen: vollständige Fälle in allen Modellvariablen
 
 # Einfache Tabelle mit Frequencies (entspricht: tab trad_family treatment, nof col)
 df |>
-  count(trad_family, treatment) |>
+  count(treatment, trad_family) |>
   group_by(treatment) |>
   mutate(pct = round(n / sum(n) * 100, 1)) |>
   select(-n) |>
@@ -321,10 +321,10 @@ df_svy |>
 # Vollzeitarbeit von Frauen bei Präsenz eines Kleinkindes wird im Schnitt viel
 # stärker abgelehnt als bei Männern.
 
-plotdata <- df_svy |>
-  group_by(treatment, trad_family) |>
-  summarise(pct = survey_mean(vartype = "ci") * 100) |>
-  select(-c(pct_low, pct_upp))
+plotdata <- df |>
+  count(trad_family, treatment) |>
+  group_by(treatment) |>
+  mutate(pct = n / sum(n) * 100)
 
 # ggplot() öffnet eine neue Grafik; aes() definiert welche Variablen auf welche
 # Achsen bzw. Eigenschaften (Farbe, Form) gemappt werden

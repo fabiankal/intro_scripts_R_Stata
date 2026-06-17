@@ -227,18 +227,30 @@ tab trad_family treatment [aweight = pspwght], nof col // ACHTUNG Gewichtung bea
 
 // Balkendiagramm: Kategorien nebeneinander, Farbe nach Geschlecht der beurteilten Person
 // Zuerst: X-Achsen-Labels mit Zeilenumbrüchen (char(10)) neu definieren
-label define trad_family ///
-    0 "sehr dafür"        ///
-    1 "dafür"                            ///
-    2 "unentschieden" ///
-    3 "dagegen"                         ///
-    4 "sehr dagegen", modify
 
-graph bar (percent) [pweight = pspwght], over(treatment) over(trad_family) asyvars ///
+// Spaltenprozente vorab berechnen (Prozente innerhalb jeder treatment-Gruppe)
+preserve
+collapse (sum) n = pspwght, by(trad_family treatment) // weighted n by category
+bysort treatment: egen total = sum(n) 
+gen pct = n / total * 100 
+list
+
+// Daten ins wide-format: pct0 = Mann, pct1 = Frau
+reshape wide pct n total, i(trad_family) j(treatment)
+
+// X-Positionen leicht versetzen für nebeneinanderstehende Balken
+gen x_mann = trad_family - 0.2
+gen x_frau = trad_family + 0.2
+
+twoway ///
+    (bar pct0 x_mann, barwidth(0.35) color("68 114 196")) ///
+    (bar pct1 x_frau, barwidth(0.35) color("237 125 49")), ///
+    xlabel(0 `"sehr dafür"' 1 `"dafür"' 2 `"unentschieden"' 3 `"dagegen"' 4 `"sehr dagegen"', noticks) ///
+    xtitle("") ytitle("Prozent (%)") ///
     title("Zustimmung/Ablehnung von Vollzeitarbeit nach Geschlecht der beurteilten Person") ///
-    ytitle("Prozent (%)") ///
     legend(order(1 "Mann" 2 "Frau") title("Beurteilte Person")) ///
-	xsize(8.5)
+    xsize(8.5)
+restore
 graph export "$figures/balkendiagramm_treatment.png", replace
 
 // Vollzeitarbeit von Frauen bei Präsenz eines Kleinkindes Haushalt wird im 
