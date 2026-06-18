@@ -299,7 +299,7 @@ nrow(df) # 2295 Individuen: vollständige Fälle in allen Modellvariablen
 
 # Einfache Tabelle mit Frequencies (entspricht: tab trad_family treatment, nof col)
 df |>
-  count(treatment, trad_family) |>
+  count(trad_family, treatment) |>
   group_by(treatment) |>
   mutate(pct = round(n / sum(n) * 100, 1)) |>
   select(-n) |>
@@ -321,10 +321,10 @@ df_svy |>
 # Vollzeitarbeit von Frauen bei Präsenz eines Kleinkindes wird im Schnitt viel
 # stärker abgelehnt als bei Männern.
 
-plotdata <- df |>
-  count(trad_family, treatment) |>
-  group_by(treatment) |>
-  mutate(pct = n / sum(n) * 100)
+plotdata <- df_svy |>
+  group_by(treatment, trad_family) |>
+  summarise(pct = survey_mean(vartype = "ci") * 100) |>
+  select(-c(pct_low, pct_upp))
 
 # ggplot() öffnet eine neue Grafik; aes() definiert welche Variablen auf welche
 # Achsen bzw. Eigenschaften (Farbe, Form) gemappt werden
@@ -348,7 +348,7 @@ ggplot(data = plotdata,
   theme(panel.grid.major.x = element_blank())  # vertikale Gitterlinien entfernen
 
 # ggsave() speichert die zuletzt erstellte Grafik in eine Datei
-ggsave(file.path(figures, "balkendiagramm_treatment_R.png"),
+ggsave(file.path(figures, "balkendiagramm_treatment_2019_R.png"),
        width = 8.5, height = 5, dpi = 300)
 
 # -----------------------------------------------------------------------
